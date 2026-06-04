@@ -1,13 +1,14 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlusCircle, Trash2, ArrowLeft } from "lucide-react";
 import { createCategory, deleteCategory } from "../actions/finance";
 
 export default async function CategoriesPage() {
-  await requireUser();
+  const session = await requireHouse();
 
   const categories = await prisma.category.findMany({
+    where: { houseId: session.houseId! },
     orderBy: { name: "asc" },
   });
 

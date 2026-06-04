@@ -1,14 +1,14 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import NewBudgetForm from "./NewBudgetForm";
 
 export default async function NewBudgetPage() {
-  await requireUser();
+  const session = await requireHouse();
 
   const categories = await prisma.category.findMany({
-    where: { type: "EXPENSE" },
+    where: { houseId: session.houseId!, type: "EXPENSE" },
     orderBy: { name: "asc" },
   });
 

@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -6,11 +6,11 @@ import EditTransactionForm from "./EditTransactionForm";
 import { redirect } from "next/navigation";
 
 export default async function EditTransactionPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  const session = await requireHouse();
   const { id } = await params;
 
   const transaction = await prisma.transaction.findUnique({
-    where: { id },
+    where: { id, houseId: session.houseId! },
   });
 
   if (!transaction) {
@@ -18,6 +18,7 @@ export default async function EditTransactionPage({ params }: { params: Promise<
   }
 
   const categories = await prisma.category.findMany({
+    where: { houseId: session.houseId! },
     orderBy: { name: "asc" },
   });
 

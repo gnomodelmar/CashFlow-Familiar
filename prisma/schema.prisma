@@ -7,10 +7,29 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+model House {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  password        String
+  users           User[]
+  categories      Category[]
+  transactions    Transaction[]
+  budgets         Budget[]
+  fixedTasks      FixedTask[]
+  monthlySummaries MonthlySummary[]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
 model User {
   id           String        @id @default(uuid())
-  name         String
+  name         String        @unique
   pin          String        // simple auth
+
+  houseId      String?
+  house        House?        @relation(fields: [houseId], references: [id])
+
   transactions Transaction[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -21,6 +40,10 @@ model Category {
   name         String
   type         String        // "INCOME" or "EXPENSE"
   color        String?
+
+  houseId      String
+  house        House         @relation(fields: [houseId], references: [id], onDelete: Cascade)
+
   transactions Transaction[]
   budgets      Budget[]
   fixedTasks   FixedTask[]
@@ -42,6 +65,9 @@ model Transaction {
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id])
 
+  houseId     String
+  house       House     @relation(fields: [houseId], references: [id], onDelete: Cascade)
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -54,6 +80,9 @@ model Budget {
 
   categoryId  String
   category    Category @relation(fields: [categoryId], references: [id])
+
+  houseId     String
+  house       House    @relation(fields: [houseId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -70,6 +99,9 @@ model FixedTask {
   categoryId  String?
   category    Category?      @relation(fields: [categoryId], references: [id])
 
+  houseId     String
+  house       House          @relation(fields: [houseId], references: [id], onDelete: Cascade)
+
   instances   TaskInstance[]
 
   createdAt   DateTime       @default(now())
@@ -84,7 +116,7 @@ model TaskInstance {
   finalAmount  Float?
 
   fixedTaskId  String
-  fixedTask    FixedTask @relation(fields: [fixedTaskId], references: [id])
+  fixedTask    FixedTask @relation(fields: [fixedTaskId], references: [id], onDelete: Cascade)
 
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -98,8 +130,11 @@ model MonthlySummary {
   year           Int
   manualSavings  Float?   // The savings set by user manually
 
+  houseId        String
+  house          House    @relation(fields: [houseId], references: [id], onDelete: Cascade)
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  @@unique([month, year])
+  @@unique([houseId, month, year])
 }

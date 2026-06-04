@@ -19,6 +19,14 @@ export async function requireUser() {
   return session;
 }
 
+export async function requireHouse() {
+  const session = await requireUser();
+  if (!session.houseId) {
+    redirect("/house");
+  }
+  return session;
+}
+
 export async function login(name: string, pin: string) {
   const user = await prisma.user.findFirst({
     where: { name, pin },
@@ -28,6 +36,7 @@ export async function login(name: string, pin: string) {
     const session = await getSession();
     session.userId = user.id;
     session.name = user.name;
+    session.houseId = user.houseId;
     await session.save();
     return { success: true };
   }
@@ -43,10 +52,11 @@ export async function register(name: string, pin: string) {
     const session = await getSession();
     session.userId = user.id;
     session.name = user.name;
+    session.houseId = null;
     await session.save();
     return { success: true };
   } catch (_error) {
-    return { success: false, error: "Error al registrar el usuario." };
+    return { success: false, error: "Ese nombre de usuario ya está en uso." };
   }
 }
 

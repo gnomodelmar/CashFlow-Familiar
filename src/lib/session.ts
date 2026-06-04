@@ -3,6 +3,7 @@ import { SessionOptions } from "iron-session";
 export interface SessionData {
   userId?: string;
   name?: string;
+  houseId?: string | null;
 }
 
 export const sessionOptions: SessionOptions = {

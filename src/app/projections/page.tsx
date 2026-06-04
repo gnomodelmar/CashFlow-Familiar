@@ -1,11 +1,11 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ProjectionsCalculator } from "./ProjectionsCalculator";
 
 export default async function ProjectionsPage() {
-  await requireUser();
+  const session = await requireHouse();
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -14,6 +14,7 @@ export default async function ProjectionsPage() {
   // Get current month real data to use as base
   const transactions = await prisma.transaction.findMany({
     where: {
+      houseId: session.houseId!,
       date: { gte: startOfMonth, lte: endOfMonth },
       type: { in: ["INCOME", "EXPENSE"] }
     }
@@ -29,7 +30,7 @@ export default async function ProjectionsPage() {
 
   // Get fixed tasks
   const fixedTasks = await prisma.fixedTask.findMany({
-    where: { active: true }
+    where: { active: true, houseId: session.houseId! }
   });
 
   return (

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { syncAdjustmentTransaction } from "./savings";
 
@@ -12,7 +12,7 @@ export async function createFixedTask(data: {
   dayOfMonth: number;
   categoryId?: string;
 }) {
-  await requireUser();
+  const session = await requireHouse();
 
   await prisma.fixedTask.create({
     data: {
@@ -21,6 +21,7 @@ export async function createFixedTask(data: {
       type: data.type,
       dayOfMonth: data.dayOfMonth,
       categoryId: data.categoryId,
+      houseId: session.houseId!,
     },
   });
 
@@ -37,10 +38,10 @@ export async function editFixedTask(
     categoryId?: string;
   }
 ) {
-  await requireUser();
+  const session = await requireHouse();
 
   await prisma.fixedTask.update({
-    where: { id },
+    where: { id, houseId: session.houseId! },
     data: {
       name: data.name,
       amount: data.amount,
@@ -54,7 +55,14 @@ export async function editFixedTask(
 }
 
 export async function deleteFixedTask(id: string) {
-  await requireUser();
+  const session = await requireHouse();
+
+  // First verify ownership
+  const task = await prisma.fixedTask.findUnique({
+    where: { id, houseId: session.houseId! }
+  });
+
+  if (!task) return;
 
   // First delete instances
   await prisma.taskInstance.deleteMany({
@@ -69,9 +77,11 @@ export async function deleteFixedTask(id: string) {
 }
 
 export async function generateInstancesForMonth(month: number, year: number) {
+  const session = await requireHouse();
+
   // 1. Get all active fixed tasks
   const activeTasks = await prisma.fixedTask.findMany({
-    where: { active: true },
+    where: { active: true, houseId: session.houseId! },
   });
 
   // 2. For each task, ensure an instance exists for the given month/year
@@ -100,7 +110,7 @@ export async function processTaskInstance(
   action: "PAY" | "CANCEL",
   finalAmount?: number
 ) {
-  const session = await requireUser();
+  const session = await requireHouse();
 
   const instance = await prisma.taskInstance.findUnique({
     where: { id: instanceId },
@@ -139,12 +149,13 @@ export async function processTaskInstance(
         type: instance.fixedTask.type,
         categoryId: instance.fixedTask.categoryId,
         userId: session.userId,
+        houseId: session.houseId!,
       },
     });
 
     // Re-sync savings if there is a manual saving set for this month
     const summary = await prisma.monthlySummary.findUnique({
-      where: { month_year: { month: instance.month, year: instance.year } }
+      where: { houseId_month_year: { houseId: session.houseId!, month: instance.month, year: instance.year } }
     });
 
     if (summary && summary.manualSavings !== null) {

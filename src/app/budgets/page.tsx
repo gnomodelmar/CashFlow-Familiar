@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlusCircle, ArrowLeft, Trash2 } from "lucide-react";
@@ -6,9 +6,10 @@ import { deleteBudget } from "../actions/budget";
 import { format } from "date-fns";
 
 export default async function BudgetsPage() {
-  await requireUser();
+  const session = await requireHouse();
 
   const budgets = await prisma.budget.findMany({
+    where: { houseId: session.houseId! },
     orderBy: { endDate: "desc" },
     include: { category: true },
   });

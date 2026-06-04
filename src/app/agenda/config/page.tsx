@@ -1,13 +1,14 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlusCircle, ArrowLeft, Trash2 } from "lucide-react";
 import { deleteFixedTask } from "../../actions/agenda";
 
 export default async function AgendaConfigPage() {
-  await requireUser();
+  const session = await requireHouse();
 
   const fixedTasks = await prisma.fixedTask.findMany({
+    where: { houseId: session.houseId! },
     orderBy: { dayOfMonth: "asc" },
     include: { category: true },
   });

@@ -1,10 +1,10 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import CCPaymentForm from "./CCPaymentForm";
 
 export default async function CCPaymentPage() {
-  await requireUser();
+  await requireHouse();
 
   return (
     <div className="max-w-xl mx-auto p-4 space-y-6 mt-4">

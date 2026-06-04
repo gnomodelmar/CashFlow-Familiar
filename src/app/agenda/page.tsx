@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft, Settings } from "lucide-react";
@@ -10,7 +10,7 @@ export default async function AgendaPage({
 }: {
   searchParams: Promise<{ month?: string; year?: string }>;
 }) {
-  await requireUser();
+  const session = await requireHouse();
   const params = await searchParams;
 
   const now = new Date();
@@ -21,7 +21,11 @@ export default async function AgendaPage({
   await generateInstancesForMonth(month, year);
 
   const instances = await prisma.taskInstance.findMany({
-    where: { month, year },
+    where: {
+      month,
+      year,
+      fixedTask: { houseId: session.houseId! }
+    },
     include: { fixedTask: true },
     orderBy: { fixedTask: { dayOfMonth: "asc" } },
   });

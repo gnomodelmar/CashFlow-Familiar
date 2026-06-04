@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlusCircle, ArrowLeft, Trash2 } from "lucide-react";
@@ -6,9 +6,10 @@ import { deleteTransaction } from "../actions/finance";
 import { format } from "date-fns";
 
 export default async function TransactionsPage() {
-  await requireUser();
+  const session = await requireHouse();
 
   const transactions = await prisma.transaction.findMany({
+    where: { houseId: session.houseId! },
     orderBy: { date: "desc" },
     include: { category: true, user: true },
     take: 50,

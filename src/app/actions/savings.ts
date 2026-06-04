@@ -1,19 +1,20 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 /**
  * Calculates the current mathematical total for a specific month
  */
-async function calculateMonthlyTotal(month: number, year: number) {
+async function calculateMonthlyTotal(houseId: string, month: number, year: number) {
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59);
 
   // We exclude the automatic adjustment transactions to get the REAL total
   const transactions = await prisma.transaction.findMany({
     where: {
+      houseId,
       date: { gte: startDate, lte: endDate },
       type: { in: ["INCOME", "EXPENSE"] },
     },
@@ -29,9 +30,9 @@ async function calculateMonthlyTotal(month: number, year: number) {
  * Creates or updates the adjustment transaction to match the manual savings
  */
 export async function syncAdjustmentTransaction(month: number, year: number, manualSavings: number) {
-  const session = await requireUser();
+  const session = await requireHouse();
 
-  const realTotal = await calculateMonthlyTotal(month, year);
+  const realTotal = await calculateMonthlyTotal(session.houseId!, month, year);
   const difference = manualSavings - realTotal;
 
   const startDate = new Date(year, month - 1, 1);
@@ -40,6 +41,7 @@ export async function syncAdjustmentTransaction(month: number, year: number, man
   // Find existing adjustment
   const existingAdjustment = await prisma.transaction.findFirst({
     where: {
+      houseId: session.houseId!,
       date: { gte: startDate, lte: endDate },
       type: "ADJUSTMENT",
     },
@@ -59,6 +61,7 @@ export async function syncAdjustmentTransaction(month: number, year: number, man
     description: "Ajuste de Ahorro Mensual",
     type: "ADJUSTMENT",
     userId: session.userId,
+    houseId: session.houseId!,
   };
 
   if (existingAdjustment) {
@@ -74,17 +77,18 @@ export async function syncAdjustmentTransaction(month: number, year: number, man
 }
 
 export async function saveManualSavings(month: number, year: number, savings: number | null) {
-  await requireUser();
+  const session = await requireHouse();
 
   await prisma.monthlySummary.upsert({
     where: {
-      month_year: { month, year },
+      houseId_month_year: { houseId: session.houseId!, month, year },
     },
     update: { manualSavings: savings },
     create: {
       month,
       year,
       manualSavings: savings,
+      houseId: session.houseId!,
     },
   });
 
@@ -96,6 +100,7 @@ export async function saveManualSavings(month: number, year: number, savings: nu
     const endDate = new Date(year, month, 0, 23, 59, 59);
     await prisma.transaction.deleteMany({
       where: {
+        houseId: session.houseId!,
         date: { gte: startDate, lte: endDate },
         type: "ADJUSTMENT",
       },

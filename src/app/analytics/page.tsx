@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -9,7 +9,7 @@ export default async function AnalyticsPage({
 }: {
   searchParams: Promise<{ months?: string }>;
 }) {
-  await requireUser();
+  const session = await requireHouse();
   const params = await searchParams;
 
   const numMonths = params?.months ? parseInt(params.months) : 6;
@@ -27,7 +27,7 @@ export default async function AnalyticsPage({
     const mEnd = new Date(m.year, m.month, 0, 23, 59, 59);
 
     const txs = await prisma.transaction.findMany({
-      where: { date: { gte: mStart, lte: mEnd }, type: { in: ["INCOME", "EXPENSE"] } },
+      where: { houseId: session.houseId!, date: { gte: mStart, lte: mEnd }, type: { in: ["INCOME", "EXPENSE"] } },
       include: { category: true }
     });
 

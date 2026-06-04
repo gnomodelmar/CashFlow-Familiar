@@ -1,12 +1,13 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    await requireUser();
+    const session = await requireHouse();
 
     const transactions = await prisma.transaction.findMany({
+      where: { houseId: session.houseId! },
       orderBy: { date: "desc" },
       include: {
         category: true,

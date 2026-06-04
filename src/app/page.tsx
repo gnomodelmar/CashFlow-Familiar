@@ -1,10 +1,10 @@
-import { requireUser, logout } from "@/lib/auth";
+import { requireHouse, logout } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlusCircle, List, PieChart, CalendarDays, Wallet, LogOut, Settings } from "lucide-react";
 
 export default async function Dashboard() {
-  const session = await requireUser();
+  const session = await requireHouse();
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -13,6 +13,7 @@ export default async function Dashboard() {
   // Get current month's transactions
   const transactions = await prisma.transaction.findMany({
     where: {
+      houseId: session.houseId!,
       date: { gte: startOfMonth, lte: endOfMonth },
     },
   });
@@ -32,7 +33,9 @@ export default async function Dashboard() {
   const balance = totalIncomes - totalExpenses + totalAdjustments;
 
   // Calculate Global Balances
-  const allTransactions = await prisma.transaction.findMany({});
+  const allTransactions = await prisma.transaction.findMany({
+    where: { houseId: session.houseId! }
+  });
 
   const totalLifetimeIncomes = allTransactions
     .filter(t => t.type === "INCOME")
@@ -65,6 +68,7 @@ export default async function Dashboard() {
   // Get active budgets
   const activeBudgets = await prisma.budget.findMany({
     where: {
+      houseId: session.houseId!,
       startDate: { lte: now },
       endDate: { gte: now },
     },
@@ -94,6 +98,7 @@ export default async function Dashboard() {
   // stores month/year instead of full dates for instances.
   const recentInstances = await prisma.taskInstance.findMany({
     where: {
+      fixedTask: { houseId: session.houseId! },
       year: {
         in: [thirtyDaysAgo.getFullYear(), in14Days.getFullYear()]
       }
