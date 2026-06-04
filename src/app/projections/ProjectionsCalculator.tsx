@@ -16,10 +16,13 @@ export function ProjectionsCalculator({
   const [inflationRate, setInflationRate] = useState(5); // Monthly inflation %
   const [incomeGrowthRate, setIncomeGrowthRate] = useState(3); // Monthly income growth %
 
+  const [customBaseIncome, setCustomBaseIncome] = useState(baseIncome);
+  const [customBaseExpense, setCustomBaseExpense] = useState(baseExpense);
+
   const generateProjections = () => {
     const data = [];
-    let currentIncome = baseIncome;
-    let currentBaseExpense = baseExpense;
+    let currentIncome = customBaseIncome;
+    let currentBaseExpense = customBaseExpense;
 
     for (let i = 1; i <= monthsToProject; i++) {
       // Calculate this month's fixed tasks
@@ -55,35 +58,55 @@ export function ProjectionsCalculator({
       <div className="bg-white p-6 rounded-xl shadow space-y-4">
         <h3 className="font-bold text-gray-900 border-b pb-2">Variables del Escenario</h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Meses a proyectar</label>
+            <label className="block text-sm font-medium text-gray-700">Meses</label>
             <input
               type="number"
               value={monthsToProject}
               onChange={(e) => setMonthsToProject(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm"
               min="1" max="24"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Inflación Mensual (%)</label>
+            <label className="block text-sm font-medium text-gray-700">Inflación (%)</label>
             <input
               type="number"
               value={inflationRate}
               onChange={(e) => setInflationRate(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm"
               step="0.1"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Aumento Ingresos Mensual (%)</label>
+            <label className="block text-sm font-medium text-gray-700">Crec. Ingreso (%)</label>
             <input
               type="number"
               value={incomeGrowthRate}
               onChange={(e) => setIncomeGrowthRate(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm"
               step="0.1"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Ingreso Base ($)</label>
+            <input
+              type="number"
+              value={customBaseIncome}
+              onChange={(e) => setCustomBaseIncome(Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm"
+              step="1"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Gasto Base ($)</label>
+            <input
+              type="number"
+              value={customBaseExpense}
+              onChange={(e) => setCustomBaseExpense(Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm"
+              step="1"
             />
           </div>
         </div>

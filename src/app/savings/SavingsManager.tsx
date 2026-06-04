@@ -76,7 +76,7 @@ export default function SavingsManager({
               value={savingsValue}
               onChange={(e) => setSavingsValue(Number(e.target.value))}
               step="0.01"
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-lg shadow-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-lg text-gray-900 shadow-sm"
             />
           </div>
           <div className="flex gap-2">
