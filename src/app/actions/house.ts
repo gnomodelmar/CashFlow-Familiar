@@ -22,7 +22,6 @@ export async function createHouse(name: string, password: string) {
 
     return { success: true };
   } catch (error) {
-    console.error("Error creating house:", error);
     return { success: false, error: "El nombre de la casa ya está en uso." };
   }
 }

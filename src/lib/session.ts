@@ -7,7 +7,7 @@ export interface SessionData {
 }
 
 export const sessionOptions: SessionOptions = {
-  password: process.env.SECRET_COOKIE_PASSWORD || "complex_password_at_least_32_characters_long",
+  password: process.env.SECRET_COOKIE_PASSWORD as string,
   cookieName: "cashflow_session",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
