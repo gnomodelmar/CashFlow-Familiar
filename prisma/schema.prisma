@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  pin          String        // simple auth
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Category {
+  id           String        @id @default(uuid())
+  name         String
+  type         String        // "INCOME" or "EXPENSE"
+  color        String?
+  transactions Transaction[]
+  budgets      Budget[]
+  fixedTasks   FixedTask[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Transaction {
+  id          String    @id @default(uuid())
+  amount      Float
+  date        DateTime
+  description String?
+  type        String    // "INCOME", "EXPENSE", "ADJUSTMENT"
+
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Budget {
+  id          String   @id @default(uuid())
+  amount      Float
+  startDate   DateTime
+  endDate     DateTime
+
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FixedTask {
+  id          String         @id @default(uuid())
+  name        String
+  amount      Float
+  type        String         // "INCOME" or "EXPENSE"
+  dayOfMonth  Int            // 1-31
+  active      Boolean        @default(true)
+
+  categoryId  String?
+  category    Category?      @relation(fields: [categoryId], references: [id])
+
+  instances   TaskInstance[]
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model TaskInstance {
+  id           String    @id @default(uuid())
+  month        Int       // 1-12
+  year         Int
+  status       String    // "PENDING", "PAID", "CANCELLED"
+  finalAmount  Float?
+
+  fixedTaskId  String
+  fixedTask    FixedTask @relation(fields: [fixedTaskId], references: [id])
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([fixedTaskId, month, year])
+}
+
+model MonthlySummary {
+  id             String   @id @default(uuid())
+  month          Int
+  year           Int
+  manualSavings  Float?   // The savings set by user manually
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([month, year])
+}
