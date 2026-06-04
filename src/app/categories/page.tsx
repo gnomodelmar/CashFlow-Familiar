@@ -1,13 +1,14 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlusCircle, Trash2, ArrowLeft } from "lucide-react";
 import { createCategory, deleteCategory } from "../actions/finance";
 
 export default async function CategoriesPage() {
-  await requireUser();
+  const session = await requireHouse();
 
   const categories = await prisma.category.findMany({
+    where: { houseId: session.houseId! },
     orderBy: { name: "asc" },
   });
 
@@ -39,11 +40,11 @@ export default async function CategoriesPage() {
             name="name"
             placeholder="Nombre"
             required
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
           <select
             name="type"
-            className="rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value="EXPENSE">Gasto</option>
             <option value="INCOME">Ingreso</option>

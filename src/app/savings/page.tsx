@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -9,7 +9,7 @@ export default async function SavingsPage({
 }: {
   searchParams: Promise<{ month?: string; year?: string }>;
 }) {
-  await requireUser();
+  const session = await requireHouse();
   const params = await searchParams;
 
   const now = new Date();
@@ -22,6 +22,7 @@ export default async function SavingsPage({
   // Get real transactions (excluding adjustments)
   const transactions = await prisma.transaction.findMany({
     where: {
+      houseId: session.houseId!,
       date: { gte: startDate, lte: endDate },
       type: { in: ["INCOME", "EXPENSE"] },
     },
@@ -33,7 +34,7 @@ export default async function SavingsPage({
 
   // Get saved summary
   const summary = await prisma.monthlySummary.findUnique({
-    where: { month_year: { month, year } }
+    where: { houseId_month_year: { houseId: session.houseId!, month, year } }
   });
 
   const monthNames = [

@@ -16,10 +16,14 @@ export function ProjectionsCalculator({
   const [inflationRate, setInflationRate] = useState(5); // Monthly inflation %
   const [incomeGrowthRate, setIncomeGrowthRate] = useState(3); // Monthly income growth %
 
+  const [customBaseIncome, setCustomBaseIncome] = useState(baseIncome);
+  const [customBaseExpense, setCustomBaseExpense] = useState(baseExpense);
+
   const generateProjections = () => {
     const data = [];
-    let currentIncome = baseIncome;
-    let currentBaseExpense = baseExpense;
+    let currentIncome = customBaseIncome;
+    let currentBaseExpense = customBaseExpense;
+    let cumulativeSavings = 0;
 
     for (let i = 1; i <= monthsToProject; i++) {
       // Calculate this month's fixed tasks
@@ -33,12 +37,16 @@ export function ProjectionsCalculator({
 
       const totalIncome = currentIncome + monthFixedIncome;
       const totalExpense = currentBaseExpense + monthFixedExpense;
+      const monthSaving = totalIncome - totalExpense;
+
+      cumulativeSavings += monthSaving;
 
       data.push({
         mes: `Mes ${i}`,
         Ingresos: Math.round(totalIncome),
         Gastos: Math.round(totalExpense),
-        Ahorro: Math.round(totalIncome - totalExpense)
+        Ahorro: Math.round(monthSaving),
+        Acumulado: Math.round(cumulativeSavings)
       });
 
       // Apply growth/inflation for next month
@@ -55,35 +63,55 @@ export function ProjectionsCalculator({
       <div className="bg-white p-6 rounded-xl shadow space-y-4">
         <h3 className="font-bold text-gray-900 border-b pb-2">Variables del Escenario</h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Meses a proyectar</label>
+            <label className="block text-sm font-medium text-gray-700">Meses</label>
             <input
               type="number"
               value={monthsToProject}
               onChange={(e) => setMonthsToProject(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm"
               min="1" max="24"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Inflación Mensual (%)</label>
+            <label className="block text-sm font-medium text-gray-700">Inflación (%)</label>
             <input
               type="number"
               value={inflationRate}
               onChange={(e) => setInflationRate(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm"
               step="0.1"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Aumento Ingresos Mensual (%)</label>
+            <label className="block text-sm font-medium text-gray-700">Crec. Ingreso (%)</label>
             <input
               type="number"
               value={incomeGrowthRate}
               onChange={(e) => setIncomeGrowthRate(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm"
               step="0.1"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Ingreso Base ($)</label>
+            <input
+              type="number"
+              value={customBaseIncome}
+              onChange={(e) => setCustomBaseIncome(Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm"
+              step="1"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Gasto Base ($)</label>
+            <input
+              type="number"
+              value={customBaseExpense}
+              onChange={(e) => setCustomBaseExpense(Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm"
+              step="1"
             />
           </div>
         </div>
@@ -104,6 +132,7 @@ export function ProjectionsCalculator({
               <Area type="monotone" dataKey="Ingresos" stroke="#22c55e" fill="#22c55e" fillOpacity={0.1} />
               <Area type="monotone" dataKey="Gastos" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} />
               <Area type="monotone" dataKey="Ahorro" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.3} />
+              <Area type="monotone" dataKey="Acumulado" stroke="#ca8a04" fill="#ca8a04" fillOpacity={0.1} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -116,7 +145,8 @@ export function ProjectionsCalculator({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mes</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ingresos</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Gastos</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ahorro Resultante</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ahorro Mensual</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ahorro Acumulado</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -126,6 +156,7 @@ export function ProjectionsCalculator({
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-green-600">${d.Ingresos.toLocaleString("es-AR")}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-red-600">${d.Gastos.toLocaleString("es-AR")}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-indigo-600">${d.Ahorro.toLocaleString("es-AR")}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-yellow-600">${d.Acumulado.toLocaleString("es-AR")}</td>
               </tr>
             ))}
           </tbody>

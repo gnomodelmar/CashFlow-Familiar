@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 export async function createBudget(data: {
@@ -10,7 +10,7 @@ export async function createBudget(data: {
   endDate: Date;
   categoryId: string;
 }) {
-  await requireUser();
+  const session = await requireHouse();
 
   await prisma.budget.create({
     data: {
@@ -18,6 +18,7 @@ export async function createBudget(data: {
       startDate: data.startDate,
       endDate: data.endDate,
       categoryId: data.categoryId,
+      houseId: session.houseId!,
     },
   });
 
@@ -26,10 +27,10 @@ export async function createBudget(data: {
 }
 
 export async function deleteBudget(id: string) {
-  await requireUser();
+  const session = await requireHouse();
 
   await prisma.budget.delete({
-    where: { id },
+    where: { id, houseId: session.houseId! },
   });
 
   revalidatePath("/budgets");

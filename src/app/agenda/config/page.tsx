@@ -1,13 +1,14 @@
-import { requireUser } from "@/lib/auth";
+import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlusCircle, ArrowLeft, Trash2 } from "lucide-react";
 import { deleteFixedTask } from "../../actions/agenda";
 
 export default async function AgendaConfigPage() {
-  await requireUser();
+  const session = await requireHouse();
 
   const fixedTasks = await prisma.fixedTask.findMany({
+    where: { houseId: session.houseId! },
     orderBy: { dayOfMonth: "asc" },
     include: { category: true },
   });
@@ -50,6 +51,9 @@ export default async function AgendaConfigPage() {
                 <p className={`font-semibold ${task.type === "INCOME" ? "text-green-600" : "text-red-600"}`}>
                   {task.type === "INCOME" ? "+" : "-"}${task.amount.toLocaleString("es-AR")}
                 </p>
+                <Link href={`/agenda/edit/${task.id}`} className="text-gray-400 hover:text-indigo-600 text-sm font-medium">
+                  Editar
+                </Link>
                 <form action={async () => {
                   "use server";
                   await deleteFixedTask(task.id);
