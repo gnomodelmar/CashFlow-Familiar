@@ -29,11 +29,12 @@ model Category {
 }
 
 model Transaction {
-  id          String    @id @default(uuid())
-  amount      Float
-  date        DateTime
-  description String?
-  type        String    // "INCOME", "EXPENSE", "ADJUSTMENT"
+  id            String    @id @default(uuid())
+  amount        Float
+  date          DateTime
+  description   String?
+  type          String    // "INCOME", "EXPENSE", "ADJUSTMENT", "CC_PAYMENT"
+  paymentMethod String    @default("CASH") // "CASH", "CREDIT"
 
   userId      String?
   user        User?     @relation(fields: [userId], references: [id])

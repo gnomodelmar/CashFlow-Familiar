@@ -23,6 +23,7 @@ export function ProjectionsCalculator({
     const data = [];
     let currentIncome = customBaseIncome;
     let currentBaseExpense = customBaseExpense;
+    let cumulativeSavings = 0;
 
     for (let i = 1; i <= monthsToProject; i++) {
       // Calculate this month's fixed tasks
@@ -36,12 +37,16 @@ export function ProjectionsCalculator({
 
       const totalIncome = currentIncome + monthFixedIncome;
       const totalExpense = currentBaseExpense + monthFixedExpense;
+      const monthSaving = totalIncome - totalExpense;
+
+      cumulativeSavings += monthSaving;
 
       data.push({
         mes: `Mes ${i}`,
         Ingresos: Math.round(totalIncome),
         Gastos: Math.round(totalExpense),
-        Ahorro: Math.round(totalIncome - totalExpense)
+        Ahorro: Math.round(monthSaving),
+        Acumulado: Math.round(cumulativeSavings)
       });
 
       // Apply growth/inflation for next month
@@ -127,6 +132,7 @@ export function ProjectionsCalculator({
               <Area type="monotone" dataKey="Ingresos" stroke="#22c55e" fill="#22c55e" fillOpacity={0.1} />
               <Area type="monotone" dataKey="Gastos" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} />
               <Area type="monotone" dataKey="Ahorro" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.3} />
+              <Area type="monotone" dataKey="Acumulado" stroke="#ca8a04" fill="#ca8a04" fillOpacity={0.1} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -139,7 +145,8 @@ export function ProjectionsCalculator({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mes</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ingresos</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Gastos</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ahorro Resultante</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ahorro Mensual</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ahorro Acumulado</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -149,6 +156,7 @@ export function ProjectionsCalculator({
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-green-600">${d.Ingresos.toLocaleString("es-AR")}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-red-600">${d.Gastos.toLocaleString("es-AR")}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-indigo-600">${d.Ahorro.toLocaleString("es-AR")}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-yellow-600">${d.Acumulado.toLocaleString("es-AR")}</td>
               </tr>
             ))}
           </tbody>

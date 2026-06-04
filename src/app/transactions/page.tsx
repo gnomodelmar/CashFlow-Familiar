@@ -71,9 +71,17 @@ export default async function TransactionsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <p className={`font-semibold ${tx.type === "INCOME" ? "text-green-600" : tx.type === "EXPENSE" ? "text-red-600" : "text-gray-600"}`}>
-                  ${tx.amount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                </p>
+                <div className="text-right">
+                  <p className={`font-semibold ${tx.type === "INCOME" ? "text-green-600" : tx.type === "EXPENSE" ? "text-red-600" : "text-gray-600"}`}>
+                    ${tx.amount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                  </p>
+                  {tx.paymentMethod === "CREDIT" && (
+                    <span className="text-[10px] bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">TC</span>
+                  )}
+                </div>
+                <Link href={`/transactions/edit/${tx.id}`} className="text-gray-400 hover:text-indigo-600 text-sm font-medium">
+                  Editar
+                </Link>
                 <form action={async () => {
                   "use server";
                   await deleteTransaction(tx.id);

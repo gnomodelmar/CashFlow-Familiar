@@ -2,18 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createTransaction } from "../../actions/finance";
+import { editFixedTask } from "../../../actions/agenda";
 
-type Category = {
-  id: string;
-  name: string;
-  type: string;
-};
-
-export default function TransactionForm({ categories }: { categories: Category[] }) {
+export default function EditFixedTaskForm({
+  task,
+  categories
+}: {
+  task: any;
+  categories: any[];
+}) {
   const router = useRouter();
-  const [type, setType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CREDIT">("CASH");
+  const [type, setType] = useState<"EXPENSE" | "INCOME">(task.type);
   const [loading, setLoading] = useState(false);
 
   const filteredCategories = categories.filter(c => c.type === type);
@@ -23,22 +22,21 @@ export default function TransactionForm({ categories }: { categories: Category[]
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
     const amount = parseFloat(formData.get("amount") as string);
-    const date = new Date(formData.get("date") as string);
-    const description = formData.get("description") as string;
+    const dayOfMonth = parseInt(formData.get("dayOfMonth") as string);
     const categoryId = formData.get("categoryId") as string;
 
-    await createTransaction({
+    await editFixedTask(task.id, {
+      name,
       amount,
-      date,
-      description,
       type,
+      dayOfMonth,
       categoryId: categoryId || undefined,
-      paymentMethod,
     });
 
     setLoading(false);
-    router.push("/transactions");
+    router.push("/agenda/config");
     router.refresh();
   };
 
@@ -52,7 +50,7 @@ export default function TransactionForm({ categories }: { categories: Category[]
             type === "EXPENSE" ? "bg-white text-red-600 shadow" : "text-gray-500 hover:text-gray-700"
           }`}
         >
-          Gasto
+          Gasto Fijo
         </button>
         <button
           type="button"
@@ -61,53 +59,43 @@ export default function TransactionForm({ categories }: { categories: Category[]
             type === "INCOME" ? "bg-white text-green-600 shadow" : "text-gray-500 hover:text-gray-700"
           }`}
         >
-          Ingreso
+          Ingreso Fijo
         </button>
       </div>
 
-      {type === "EXPENSE" && (
-        <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
-          <button
-            type="button"
-            onClick={() => setPaymentMethod("CASH")}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-              paymentMethod === "CASH" ? "bg-white text-indigo-600 shadow" : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Efectivo / Débito
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentMethod("CREDIT")}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-              paymentMethod === "CREDIT" ? "bg-white text-orange-600 shadow" : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Tarjeta de Crédito
-          </button>
-        </div>
-      )}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Nombre (Ej: Alquiler, Internet)</label>
+        <input
+          type="text"
+          name="name"
+          required
+          defaultValue={task.name}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        />
+      </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Monto ($)</label>
+        <label className="block text-sm font-medium text-gray-700">Monto Estimado ($)</label>
         <input
           type="number"
           name="amount"
           step="0.01"
           min="0.01"
           required
+          defaultValue={task.amount}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-lg text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          placeholder="0.00"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Fecha</label>
+        <label className="block text-sm font-medium text-gray-700">Día del mes (1 al 31)</label>
         <input
-          type="date"
-          name="date"
+          type="number"
+          name="dayOfMonth"
+          min="1"
+          max="31"
           required
-          defaultValue={new Date().toISOString().split("T")[0]}
+          defaultValue={task.dayOfMonth}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
@@ -116,24 +104,14 @@ export default function TransactionForm({ categories }: { categories: Category[]
         <label className="block text-sm font-medium text-gray-700">Categoría</label>
         <select
           name="categoryId"
-          required
+          defaultValue={task.categoryId || ""}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         >
-          <option value="">Selecciona una categoría...</option>
+          <option value="">(Opcional) Selecciona una categoría...</option>
           {filteredCategories.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Descripción (Opcional)</label>
-        <input
-          type="text"
-          name="description"
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          placeholder="Ej: Súper de la semana"
-        />
       </div>
 
       <button
@@ -141,7 +119,7 @@ export default function TransactionForm({ categories }: { categories: Category[]
         disabled={loading}
         className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
       >
-        {loading ? "Guardando..." : "Guardar Registro"}
+        {loading ? "Guardando..." : "Actualizar Ítem"}
       </button>
     </form>
   );

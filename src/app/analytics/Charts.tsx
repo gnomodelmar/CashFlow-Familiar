@@ -2,17 +2,25 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
+import { useState } from "react";
+
 export function AnalyticsCharts({
-  expensesByCategory,
-  monthsComparison
+  monthsComparison,
+  categoryDataDict
 }: {
-  expensesByCategory: any[];
   monthsComparison: any[];
+  categoryDataDict: Record<string, any[]>;
 }) {
+  const [selectedMonth, setSelectedMonth] = useState(monthsComparison[monthsComparison.length - 1]?.name);
+
+  const expensesByCategory = categoryDataDict[selectedMonth] || [];
+
   return (
     <div className="space-y-8">
       <div className="bg-white p-4 rounded-xl shadow border border-gray-100">
-        <h3 className="text-lg font-bold mb-4 text-center">Gastos por Categoría</h3>
+        <h3 className="text-lg font-bold mb-4 text-center">
+          Gastos por Categoría - {selectedMonth}
+        </h3>
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -50,11 +58,24 @@ export function AnalyticsCharts({
               <YAxis tickFormatter={(val) => `$${val/1000}k`} />
               <Tooltip formatter={(value: any) => `$${Number(value).toLocaleString("es-AR")}`} />
               <Legend />
-              <Bar dataKey="Ingresos" fill="#22c55e" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Gastos" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="Ingresos"
+                fill="#22c55e"
+                radius={[4, 4, 0, 0]}
+                onClick={(data) => { if (data?.name) setSelectedMonth(data.name); }}
+                cursor="pointer"
+              />
+              <Bar
+                dataKey="Gastos"
+                fill="#ef4444"
+                radius={[4, 4, 0, 0]}
+                onClick={(data) => { if (data?.name) setSelectedMonth(data.name); }}
+                cursor="pointer"
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
+        <p className="text-xs text-center text-gray-500 mt-2">Hacé clic en las barras de un mes para ver su gráfico de torta.</p>
       </div>
     </div>
   );

@@ -45,8 +45,9 @@ export async function createTransaction(data: {
   amount: number;
   date: Date;
   description: string;
-  type: "INCOME" | "EXPENSE";
+  type: "INCOME" | "EXPENSE" | "CC_PAYMENT";
   categoryId?: string;
+  paymentMethod?: "CASH" | "CREDIT";
 }) {
   const session = await requireUser();
 
@@ -57,6 +58,7 @@ export async function createTransaction(data: {
       description: data.description,
       type: data.type,
       categoryId: data.categoryId,
+      paymentMethod: data.paymentMethod || "CASH",
       userId: session.userId,
     },
   });
@@ -64,6 +66,46 @@ export async function createTransaction(data: {
   // Re-sync savings if there is a manual saving set for this month
   const month = data.date.getMonth() + 1;
   const year = data.date.getFullYear();
+  const summary = await prisma.monthlySummary.findUnique({
+    where: { month_year: { month, year } }
+  });
+
+  if (summary && summary.manualSavings !== null) {
+    await syncAdjustmentTransaction(month, year, summary.manualSavings);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/transactions");
+  revalidatePath("/savings");
+}
+
+export async function editTransaction(
+  id: string,
+  data: {
+    amount: number;
+    date: Date;
+    description: string;
+    type: "INCOME" | "EXPENSE" | "CC_PAYMENT";
+    categoryId?: string;
+    paymentMethod?: "CASH" | "CREDIT";
+  }
+) {
+  await requireUser();
+
+  const tx = await prisma.transaction.update({
+    where: { id },
+    data: {
+      amount: data.amount,
+      date: data.date,
+      description: data.description,
+      type: data.type,
+      categoryId: data.categoryId,
+      paymentMethod: data.paymentMethod || "CASH",
+    },
+  });
+
+  const month = tx.date.getMonth() + 1;
+  const year = tx.date.getFullYear();
   const summary = await prisma.monthlySummary.findUnique({
     where: { month_year: { month, year } }
   });

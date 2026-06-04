@@ -27,6 +27,32 @@ export async function createFixedTask(data: {
   revalidatePath("/agenda");
 }
 
+export async function editFixedTask(
+  id: string,
+  data: {
+    name: string;
+    amount: number;
+    type: "INCOME" | "EXPENSE";
+    dayOfMonth: number;
+    categoryId?: string;
+  }
+) {
+  await requireUser();
+
+  await prisma.fixedTask.update({
+    where: { id },
+    data: {
+      name: data.name,
+      amount: data.amount,
+      type: data.type,
+      dayOfMonth: data.dayOfMonth,
+      categoryId: data.categoryId,
+    },
+  });
+
+  revalidatePath("/agenda");
+}
+
 export async function deleteFixedTask(id: string) {
   await requireUser();
 

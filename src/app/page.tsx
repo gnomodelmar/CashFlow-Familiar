@@ -31,6 +31,37 @@ export default async function Dashboard() {
 
   const balance = totalIncomes - totalExpenses + totalAdjustments;
 
+  // Calculate Global Balances
+  const allTransactions = await prisma.transaction.findMany({});
+
+  const totalLifetimeIncomes = allTransactions
+    .filter(t => t.type === "INCOME")
+    .reduce((acc, t) => acc + t.amount, 0);
+
+  const totalLifetimeCashExpenses = allTransactions
+    .filter(t => t.type === "EXPENSE" && t.paymentMethod === "CASH")
+    .reduce((acc, t) => acc + t.amount, 0);
+
+  const totalLifetimeCreditExpenses = allTransactions
+    .filter(t => t.type === "EXPENSE" && t.paymentMethod === "CREDIT")
+    .reduce((acc, t) => acc + t.amount, 0);
+
+  const totalLifetimeAdjustments = allTransactions
+    .filter(t => t.type === "ADJUSTMENT")
+    .reduce((acc, t) => acc + t.amount, 0);
+
+  const totalCreditPayments = allTransactions
+    .filter(t => t.type === "CC_PAYMENT")
+    .reduce((acc, t) => acc + t.amount, 0);
+
+  // Bank balance: Incomes - Cash Expenses - Credit Card Payments + Adjustments
+  const bankBalance = totalLifetimeIncomes - totalLifetimeCashExpenses - totalCreditPayments + totalLifetimeAdjustments;
+
+  // Credit Card Debt: Credit Expenses - Credit Card Payments
+  const creditDebt = totalLifetimeCreditExpenses - totalCreditPayments;
+
+  const netBalance = bankBalance - creditDebt;
+
   // Get active budgets
   const activeBudgets = await prisma.budget.findMany({
     where: {
@@ -52,6 +83,34 @@ export default async function Dashboard() {
     };
   });
 
+  // Get Agenda Items (Pending from past 30 days and upcoming next 14 days)
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const in14Days = new Date(now);
+  in14Days.setDate(in14Days.getDate() + 14);
+
+  // We need to fetch instances and filter them in memory because our DB schema
+  // stores month/year instead of full dates for instances.
+  const recentInstances = await prisma.taskInstance.findMany({
+    where: {
+      year: {
+        in: [thirtyDaysAgo.getFullYear(), in14Days.getFullYear()]
+      }
+    },
+    include: { fixedTask: true }
+  });
+
+  const dashboardAgenda = recentInstances.map(inst => {
+    const dueDate = new Date(inst.year, inst.month - 1, inst.fixedTask.dayOfMonth);
+    const isPast = dueDate < now;
+    return { ...inst, dueDate, isPast };
+  }).filter(inst => {
+    // Only show pending items that are past, OR upcoming items in the next 14 days
+    if (inst.status === "PENDING" && inst.dueDate >= thirtyDaysAgo && inst.dueDate <= in14Days) return true;
+    return false;
+  }).sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6 pb-24">
       {/* Header */}
@@ -70,20 +129,17 @@ export default async function Dashboard() {
       {/* Main Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
-          <p className="text-sm font-medium text-gray-500">Ingresos Totales</p>
-          <p className="text-2xl font-bold text-green-600 mt-2">${totalIncomes.toLocaleString("es-AR")}</p>
+          <p className="text-sm font-medium text-gray-500">Saldo Banco / Efectivo</p>
+          <p className="text-2xl font-bold text-green-600 mt-2">${bankBalance.toLocaleString("es-AR")}</p>
         </div>
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
-          <p className="text-sm font-medium text-gray-500">Gastos Totales</p>
-          <p className="text-2xl font-bold text-red-600 mt-2">${totalExpenses.toLocaleString("es-AR")}</p>
+          <p className="text-sm font-medium text-gray-500">Deuda Tarjeta de Crédito</p>
+          <p className="text-2xl font-bold text-orange-500 mt-2">${creditDebt.toLocaleString("es-AR")}</p>
         </div>
         <div className="bg-indigo-600 rounded-2xl p-6 shadow-sm flex flex-col justify-between text-white relative overflow-hidden">
           <div className="relative z-10">
-            <p className="text-sm font-medium text-indigo-100">Balance del Mes (Ahorro)</p>
-            <p className="text-3xl font-bold mt-2">${balance.toLocaleString("es-AR")}</p>
-            <Link href="/savings" className="text-xs text-indigo-200 mt-2 inline-block hover:text-white underline">
-              Ajustar Ahorro Manual
-            </Link>
+            <p className="text-sm font-medium text-indigo-100">Saldo Real (Neto)</p>
+            <p className="text-3xl font-bold mt-2">${netBalance.toLocaleString("es-AR")}</p>
           </div>
         </div>
       </div>
@@ -93,6 +149,10 @@ export default async function Dashboard() {
         <Link href="/transactions/new" className="flex flex-col items-center justify-center p-3 md:p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:bg-gray-50 transition text-center">
           <PlusCircle size={24} className="text-indigo-600 mb-1 md:mb-2" />
           <span className="text-xs md:text-sm font-medium text-gray-700">Movimiento</span>
+        </Link>
+        <Link href="/transactions/cc-payment" className="flex flex-col items-center justify-center p-3 md:p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:bg-gray-50 transition text-center">
+          <Wallet size={24} className="text-indigo-600 mb-1 md:mb-2" />
+          <span className="text-xs md:text-sm font-medium text-gray-700">Pagar Tarjeta</span>
         </Link>
         <Link href="/agenda" className="flex flex-col items-center justify-center p-3 md:p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:bg-gray-50 transition text-center">
           <CalendarDays size={24} className="text-indigo-600 mb-1 md:mb-2" />
@@ -111,12 +171,45 @@ export default async function Dashboard() {
           <span className="text-xs md:text-sm font-medium text-gray-700">Análisis</span>
         </Link>
         <Link href="/projections" className="flex flex-col items-center justify-center p-3 md:p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:bg-gray-50 transition text-center">
-          <Wallet size={24} className="text-indigo-600 mb-1 md:mb-2" />
+          <PieChart size={24} className="text-indigo-600 mb-1 md:mb-2" />
           <span className="text-xs md:text-sm font-medium text-gray-700">Proyección</span>
         </Link>
-        <a href="/api/export" className="col-span-3 md:col-span-6 flex items-center justify-center gap-2 p-3 bg-gray-800 text-white rounded-xl shadow-sm hover:bg-gray-700 transition">
+        <a href="/api/export" className="col-span-3 md:col-span-7 flex items-center justify-center gap-2 p-3 bg-gray-800 text-white rounded-xl shadow-sm hover:bg-gray-700 transition">
           <span className="text-sm font-medium">Exportar a CSV / Excel</span>
         </a>
+      </div>
+
+      {/* Mini Agenda */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <CalendarDays size={20} className="text-indigo-600" />
+            Agenda Próxima & Pendiente
+          </h2>
+          <Link href="/agenda" className="text-sm text-indigo-600 font-medium hover:underline">
+            Ir a Agenda
+          </Link>
+        </div>
+
+        <div className="space-y-4">
+          {dashboardAgenda.map(item => (
+            <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <div>
+                <p className="font-medium text-gray-900">{item.fixedTask.name}</p>
+                <p className={`text-xs ${item.isPast ? "text-red-500 font-bold" : "text-gray-500"}`}>
+                  {item.isPast ? "Vencido: " : "Vence: "}
+                  {item.dueDate.toLocaleDateString("es-AR")}
+                </p>
+              </div>
+              <p className={`font-semibold ${item.fixedTask.type === "INCOME" ? "text-green-600" : "text-red-600"}`}>
+                ${item.fixedTask.amount.toLocaleString("es-AR")}
+              </p>
+            </div>
+          ))}
+          {dashboardAgenda.length === 0 && (
+            <p className="text-center text-gray-500 py-4">No hay vencimientos cercanos ni pendientes.</p>
+          )}
+        </div>
       </div>
 
       {/* Budgets Progress */}

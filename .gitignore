@@ -43,3 +43,6 @@ next-env.d.ts
 /src/generated/prisma
 dev.db
 *.log
+dev.db
+dev.db-journal
+server.log

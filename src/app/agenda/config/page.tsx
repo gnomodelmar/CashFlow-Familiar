@@ -50,6 +50,9 @@ export default async function AgendaConfigPage() {
                 <p className={`font-semibold ${task.type === "INCOME" ? "text-green-600" : "text-red-600"}`}>
                   {task.type === "INCOME" ? "+" : "-"}${task.amount.toLocaleString("es-AR")}
                 </p>
+                <Link href={`/agenda/edit/${task.id}`} className="text-gray-400 hover:text-indigo-600 text-sm font-medium">
+                  Editar
+                </Link>
                 <form action={async () => {
                   "use server";
                   await deleteFixedTask(task.id);
