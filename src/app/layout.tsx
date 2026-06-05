@@ -1,4 +1,15 @@
+import type { Metadata } from "next";
 import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "CashFlow Familiar",
+  description: "Gestión de finanzas familiares",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "CashFlow",
+  },
+};
 
 export default function RootLayout({
   children,
