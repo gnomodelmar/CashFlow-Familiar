@@ -4,15 +4,67 @@ import Link from "next/link";
 import { PlusCircle, ArrowLeft, Trash2 } from "lucide-react";
 import { deleteTransaction } from "../actions/finance";
 import { format } from "date-fns";
+import TransactionFilters from "./components/TransactionFilters";
+import { Prisma } from "@prisma/client";
 
-export default async function TransactionsPage() {
+export default async function TransactionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const session = await requireHouse();
+  const resolvedSearchParams = await searchParams;
+
+  const search = typeof resolvedSearchParams.search === 'string' ? resolvedSearchParams.search : undefined;
+  const categoryId = typeof resolvedSearchParams.categoryId === 'string' ? resolvedSearchParams.categoryId : undefined;
+  const dateFrom = typeof resolvedSearchParams.dateFrom === 'string' ? resolvedSearchParams.dateFrom : undefined;
+  const dateTo = typeof resolvedSearchParams.dateTo === 'string' ? resolvedSearchParams.dateTo : undefined;
+
+  const whereClause: Prisma.TransactionWhereInput = {
+    houseId: session.houseId!,
+  };
+
+  if (categoryId) {
+    whereClause.categoryId = categoryId;
+  }
+
+  if (dateFrom || dateTo) {
+    whereClause.date = {};
+    if (dateFrom) {
+      whereClause.date.gte = new Date(dateFrom);
+    }
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setUTCHours(23, 59, 59, 999);
+      whereClause.date.lte = toDate;
+    }
+  }
+
+  if (search) {
+    const searchNum = parseFloat(search);
+    const orConditions: Prisma.TransactionWhereInput[] = [
+      { description: { contains: search } },
+      { category: { name: { contains: search } } },
+    ];
+
+    if (!isNaN(searchNum)) {
+      orConditions.push({ amount: { equals: searchNum } });
+    }
+
+    whereClause.OR = orConditions;
+  }
 
   const transactions = await prisma.transaction.findMany({
-    where: { houseId: session.houseId! },
+    where: whereClause,
     orderBy: { date: "desc" },
     include: { category: true, user: true },
-    take: 50,
+    take: 100, // Increased limit slightly since we have filters
+  });
+
+  const categories = await prisma.category.findMany({
+    where: { houseId: session.houseId! },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true }
   });
 
   return (
@@ -32,6 +84,8 @@ export default async function TransactionsPage() {
           <span className="hidden sm:inline">Nuevo Registro</span>
         </Link>
       </div>
+
+      <TransactionFilters categories={categories} />
 
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <ul className="divide-y divide-gray-200">

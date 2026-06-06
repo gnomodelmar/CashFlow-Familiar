@@ -42,6 +42,23 @@ export async function deleteCategory(id: string) {
   return { success: true };
 }
 
+export async function editCategory(id: string, name: string, type: "INCOME" | "EXPENSE", color: string) {
+  const session = await requireHouse();
+
+  await prisma.category.update({
+    where: { id, houseId: session.houseId! },
+    data: {
+      name,
+      type,
+      color,
+    },
+  });
+
+  revalidatePath("/categories");
+  revalidatePath("/transactions");
+  return { success: true };
+}
+
 export async function createTransaction(data: {
   amount: number;
   date: Date;
