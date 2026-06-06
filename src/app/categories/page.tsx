@@ -1,8 +1,9 @@
 import { requireHouse } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { PlusCircle, Trash2, ArrowLeft } from "lucide-react";
-import { createCategory, deleteCategory } from "../actions/finance";
+import { PlusCircle, ArrowLeft } from "lucide-react";
+import { createCategory } from "../actions/finance";
+import CategoryList from "./components/CategoryList";
 
 export default async function CategoriesPage() {
   const session = await requireHouse();
@@ -65,39 +66,7 @@ export default async function CategoriesPage() {
         </form>
       </div>
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <ul className="divide-y divide-gray-200">
-          {categories.map((cat) => (
-            <li key={cat.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: cat.color || "#ccc" }}
-                />
-                <div>
-                  <p className="font-medium text-gray-900">{cat.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {cat.type === "EXPENSE" ? "Gasto" : "Ingreso"}
-                  </p>
-                </div>
-              </div>
-              <form action={async () => {
-                "use server";
-                await deleteCategory(cat.id);
-              }}>
-                <button type="submit" className="text-red-500 hover:text-red-700 p-2">
-                  <Trash2 size={18} />
-                </button>
-              </form>
-            </li>
-          ))}
-          {categories.length === 0 && (
-            <li className="p-8 text-center text-gray-500">
-              No hay categorías creadas
-            </li>
-          )}
-        </ul>
-      </div>
+      <CategoryList initialCategories={categories} />
     </div>
   );
 }
