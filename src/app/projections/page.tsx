@@ -33,6 +33,15 @@ export default async function ProjectionsPage() {
     where: { active: true, houseId: session.houseId! }
   });
 
+  // Get planned events for projections
+  const plannedEvents = await prisma.plannedEvent.findMany({
+    where: { houseId: session.houseId! },
+    orderBy: [
+      { year: 'asc' },
+      { month: 'asc' }
+    ]
+  });
+
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6 mt-4">
       <div className="flex items-center gap-4">
@@ -50,6 +59,7 @@ export default async function ProjectionsPage() {
         baseIncome={baseIncome}
         baseExpense={baseExpense}
         fixedTasks={fixedTasks}
+        plannedEvents={plannedEvents}
       />
     </div>
   );
